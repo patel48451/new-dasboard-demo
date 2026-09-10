@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ferrotech Inventory Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#0E1620;
+  --panel:#16212C;
+  --panel-alt:#1C2833;
+  --border:#2A3B4A;
+  --text:#E7ECEF;
+  --muted:#8CA0AF;
+  --amber:#F2A93B;
+  --green:#4FA97D;
+  --red:#E0524A;
+  --steel:#7FB8D6;
+  --mono: 'JetBrains Mono', monospace;
+  --disp: 'Oswald', sans-serif;
+  --body: 'Inter', sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 120px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 28px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 28px),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  min-height:100vh;
+  padding:20px;
+}
+.wrap{max-width:1400px;margin:0 auto;}
+
+/* header */
+.topbar{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:16px;
+  border-bottom:2px solid var(--amber);
+  padding-bottom:16px;margin-bottom:20px;
+}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:3px;
+  color:var(--amber);text-transform:uppercase;margin:0 0 6px 0;
+  display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:"";width:8px;height:8px;background:var(--amber);display:inline-block;clip-path:polygon(50% 0,100% 100%,0 100%);}
+h1{
+  font-family:var(--disp);font-weight:700;font-size:32px;margin:0;
+  letter-spacing:0.5px;text-transform:uppercase;
+}
+h1 span{color:var(--steel);}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.ctrl-group{
+  background:var(--panel);border:1px solid var(--border);border-radius:4px;
+  padding:8px 12px;display:flex;flex-direction:column;gap:2px;min-width:120px;
+}
+.ctrl-group label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);}
+.ctrl-group select, .ctrl-group input{
+  background:transparent;border:none;color:var(--text);font-family:var(--mono);
+  font-size:14px;font-weight:600;outline:none;padding:2px 0;
+}
+.toggle{
+  display:flex;background:var(--panel-alt);border:1px solid var(--border);border-radius:4px;overflow:hidden;
+}
+.toggle button{
+  border:none;background:transparent;color:var(--muted);font-family:var(--mono);
+  font-size:12px;padding:10px 14px;cursor:pointer;letter-spacing:0.5px;
+}
+.toggle button.active{background:var(--amber);color:#1A1200;font-weight:600;}
+
+/* KPI strip */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;
+  position:relative;overflow:hidden;
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--steel);}
+.kpi.warn::before{background:var(--red);}
+.kpi .val{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;}
+.kpi .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:6px;font-family:var(--mono);}
+.kpi.warn .val{color:var(--red);}
+
+/* layout */
+.grid{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;}
+@media (max-width:1000px){.grid{grid-template-columns:1fr;}}
+
+/* alert rail */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.panel h2{
+  font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:1px;
+  margin:0 0 12px 0;display:flex;align-items:center;justify-content:space-between;
+}
+.badge-count{background:var(--red);color:#fff;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:10px;}
+.alert-item{
+  border-left:3px solid var(--red);background:var(--panel-alt);padding:8px 10px;margin-bottom:8px;border-radius:0 4px 4px 0;
+}
+.alert-item.amber{border-left-color:var(--amber);}
+.alert-item .name{font-weight:600;font-size:13px;}
+.alert-item .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;}
+.alert-empty{color:var(--muted);font-size:13px;font-style:italic;}
+
+/* filters row */
+.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.filters input[type=text]{
+  background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:4px;
+  padding:9px 12px;font-family:var(--body);font-size:13px;min-width:200px;
+}
+.chip{
+  border:1px solid var(--border);background:var(--panel);color:var(--muted);
+  padding:7px 12px;border-radius:14px;font-size:12px;cursor:pointer;font-family:var(--mono);
+}
+.chip.active{background:var(--steel);color:#0E1620;border-color:var(--steel);font-weight:600;}
+
+/* table */
+.table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:6px;}
+table{border-collapse:collapse;width:100%;min-width:1500px;font-size:12.5px;}
+thead th{
+  background:var(--panel-alt);color:var(--muted);font-family:var(--mono);text-transform:uppercase;
+  font-size:10.5px;letter-spacing:0.5px;padding:10px 8px;text-align:left;border-bottom:1px solid var(--border);
+  white-space:nowrap;position:sticky;top:0;
+}
+tbody td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--mono);}
+tbody tr:hover{background:rgba(127,184,214,0.05);}
+tbody input{
+  width:64px;background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+  font-family:var(--mono);font-size:12px;padding:4px 5px;border-radius:3px;
+}
+tbody input:focus{outline:1px solid var(--steel);}
+.name-cell{font-family:var(--body);font-weight:600;color:var(--text);}
+.cat-tag{font-size:10px;color:var(--muted);font-family:var(--mono);}
+.abc{
+  font-family:var(--disp);font-weight:700;font-size:13px;padding:2px 8px;border-radius:3px;display:inline-block;
+}
+.abc-A{background:rgba(224,82,74,0.18);color:var(--red);}
+.abc-B{background:rgba(242,169,59,0.18);color:var(--amber);}
+.abc-C{background:rgba(79,169,125,0.18);color:var(--green);}
+
+.status-pill{
+  font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:3px;letter-spacing:0.5px;
+}
+.status-green{background:rgba(79,169,125,0.18);color:var(--green);}
+.status-amber{background:rgba(242,169,59,0.18);color:var(--amber);}
+.status-red{background:rgba(224,82,74,0.18);color:var(--red);}
+
+/* bin gauge signature element */
+.gauge{width:110px;}
+.gauge-track{
+  position:relative;height:10px;border-radius:2px;overflow:visible;
+  background:linear-gradient(90deg, var(--red) 0%, var(--red) var(--ss,20%), var(--amber) var(--ss,20%), var(--amber) var(--rop,45%), var(--green) var(--rop,45%), var(--green) 100%);
+}
+.gauge-marker{
+  position:absolute;top:-4px;width:2px;height:18px;background:#fff;left:var(--pos,50%);
+  box-shadow:0 0 3px rgba(255,255,255,0.8);
+}
+.gauge-track::before, .gauge-track::after{content:"";}
+.gauge-labels{display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);margin-top:5px;font-family:var(--mono);}
+
+/* savings coloring */
+.pos{color:var(--green);}
+.neg{color:var(--red);}
+
+/* charts section */
+.chart-row{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-top:18px;}
+@media (max-width:1000px){.chart-row{grid-template-columns:1fr;}}
+.chart-box{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.chart-box h2{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:10px;font-family:var(--mono);}
+select.item-select{
+  background:var(--panel-alt);border:1px solid var(--border);color:var(--text);font-family:var(--mono);
+  font-size:12px;padding:8px 10px;border-radius:4px;margin-bottom:10px;width:100%;
+}
+canvas{max-height:280px;}
+
+.footnote{margin-top:16px;font-size:11px;color:var(--muted);line-height:1.6;font-family:var(--body);}
+.footnote b{color:var(--steel);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <p class="eyebrow">MRO Parts Distribution — Live Reorder Model</p>
+      <h1>Ferrotech <span>Inventory Control</span></h1>
+    </div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>Reorder Policy</label>
+        <div class="toggle" id="policyToggle">
+          <button data-policy="continuous" class="active">Continuous</button>
+          <button data-policy="periodic">Periodic</button>
+        </div>
+      </div>
+      <div class="ctrl-group" id="reviewPeriodGroup" style="display:none;">
+        <label>Review Period (days)</label>
+        <input type="number" id="reviewPeriod" value="30" min="1" style="width:60px;">
+      </div>
+      <div class="ctrl-group">
+        <label>Service Level</label>
+        <select id="serviceLevel">
+          <option value="1.282">90%</option>
+          <option value="1.645" selected>95%</option>
+          <option value="1.960">97.5%</option>
+          <option value="2.326">99%</option>
+          <option value="3.090">99.9%</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Reorder Alerts <span class="badge-count" id="alertCount">0</span></h2>
+      <div id="alertList"></div>
+    </div>
+
+    <div>
+      <div class="filters">
+        <input type="text" id="searchBox" placeholder="Search item...">
+        <span class="chip active" data-cat="ALL">All Categories</span>
+        <span class="chip" data-cat="Fasteners">Fasteners</span>
+        <span class="chip" data-cat="Bearings">Bearings</span>
+        <span class="chip" data-cat="Hydraulics">Hydraulics</span>
+        <span class="chip" data-cat="Electrical">Electrical</span>
+        <span class="chip" data-cat="Safety Gear">Safety Gear</span>
+        <span style="flex:1"></span>
+        <span class="chip abc-filter active" data-abc="ALL">All Classes</span>
+        <span class="chip abc-filter" data-abc="A">Class A</span>
+        <span class="chip abc-filter" data-abc="B">Class B</span>
+        <span class="chip abc-filter" data-abc="C">Class C</span>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Item / Category</th>
+              <th>ABC</th>
+              <th>Ann. Demand</th>
+              <th>Order Cost ($)</th>
+              <th>Carry Cost ($/u/yr)</th>
+              <th>Unit Cost ($)</th>
+              <th>Stock</th>
+              <th>Lead Time (d)</th>
+              <th>Current Qty</th>
+              <th>Demand CV%</th>
+              <th>EOQ</th>
+              <th id="ropHeader">ROP</th>
+              <th>Safety Stock</th>
+              <th>TC @ EOQ</th>
+              <th>TC @ Current</th>
+              <th>Annual Savings</th>
+              <th>Status / Bin Level</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-box">
+          <h2>Cost vs Order Quantity</h2>
+          <div class="chart-sub">Ordering cost falls, carrying cost rises — EOQ is the minimum of total cost</div>
+          <select class="item-select" id="chartItemSelect"></select>
+          <canvas id="eoqChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h2>ABC Pareto — Annual Consumption Value</h2>
+          <div class="chart-sub">Items ranked by value, cumulative % contribution</div>
+          <canvas id="abcChart"></canvas>
+        </div>
+      </div>
+
+      <p class="footnote">
+        <b>Assumptions:</b> Ferrotech is a modeled MRO parts distributor used to demonstrate the tool — swap in your real SKUs in the table above; every input cell recalculates live. Safety stock uses <b>SS = z × σ_d × √L</b>,
+        where σ_d is estimated from an editable demand coefficient-of-variation (CV%) per item rather than raw order history. Under <b>Periodic Review</b>, the lead-time term extends to (L + review period) and the ROP column becomes an
+        Order-up-to Level (S). EOQ is shown as a cost-minimizing reference quantity in both policies, per standard practice. ABC classes use the classic 80/95 cumulative-value cutoffs. All figures are illustrative, not live ERP data.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+// ---------- DATA ----------
+let items = [
+  {name:"Hex Bolt M10x50", cat:"Fasteners", D:48000, S:45, H:0.85, C:0.32, stock:3200, LT:7, curQ:6000, cv:20},
+  {name:"Ball Bearing 6205-2RS", cat:"Bearings", D:15600, S:60, H:2.10, C:8.75, stock:850, LT:14, curQ:1200, cv:25},
+  {name:'Hydraulic Hose 3/8" (ft)', cat:"Hydraulics", D:22000, S:55, H:1.40, C:3.60, stock:1400, LT:21, curQ:2500, cv:30},
+  {name:"Safety Gloves (pair)", cat:"Safety Gear", D:9600, S:35, H:0.95, C:4.20, stock:420, LT:10, curQ:800, cv:18},
+  {name:"Contactor Relay 24V", cat:"Electrical", D:3200, S:75, H:3.80, C:22.50, stock:95, LT:28, curQ:250, cv:35},
+  {name:"Hex Nut M10", cat:"Fasteners", D:52000, S:40, H:0.40, C:0.09, stock:8000, LT:7, curQ:10000, cv:15},
+  {name:"Roller Chain #40 (ft)", cat:"Bearings", D:6800, S:65, H:1.75, C:5.10, stock:310, LT:18, curQ:900, cv:28},
+  {name:"O-Ring Kit Assorted", cat:"Hydraulics", D:11200, S:50, H:1.10, C:2.40, stock:680, LT:14, curQ:1500, cv:22},
+  {name:"Hard Hat Class E", cat:"Safety Gear", D:2400, S:35, H:1.60, C:14.80, stock:140, LT:12, curQ:300, cv:20},
+  {name:"Circuit Breaker 20A", cat:"Electrical", D:4800, S:70, H:2.90, C:16.20, stock:210, LT:25, curQ:500, cv:32},
+  {name:"Flange Gasket 4in", cat:"Hydraulics", D:7600, S:55, H:1.30, C:6.75, stock:180, LT:16, curQ:1000, cv:26},
+  {name:"Washer M10 Flat", cat:"Fasteners", D:61000, S:38, H:0.25, C:0.05, stock:12000, LT:7, curQ:12000, cv:15}
+];
+
+let state = {
+  policy: "continuous",
+  reviewPeriod: 30,
+  z: 1.645,
+  search: "",
+  cat: "ALL",
+  abc: "ALL",
+  chartItemIdx: 0
+};
+
+let eoqChart=null, abcChart=null;
+
+// ---------- CALCULATIONS ----------
+function recomputeAll(){
+  items.forEach(it=>{
+    it.dailyD = it.D/365;
+    it.EOQ = Math.sqrt((2*it.D*it.S)/it.H);
+    const horizon = state.policy==="continuous" ? it.LT : (it.LT + state.reviewPeriod);
+    it.SS = state.z * (it.dailyD*(it.cv/100)) * Math.sqrt(horizon);
+    it.ROP = it.dailyD*horizon + it.SS;
+    it.TC_EOQ = (it.D/it.EOQ)*it.S + (it.EOQ/2)*it.H;
+    it.TC_cur = (it.D/it.curQ)*it.S + (it.curQ/2)*it.H;
+    it.savings = it.TC_cur - it.TC_EOQ;
+    it.annValue = it.D*it.C;
+    if(it.stock < it.SS) it.status="red";
+    else if(it.stock <= it.ROP) it.status="amber";
+    else it.status="green";
+  });
+  // ABC classification
+  const sorted = [...items].sort((a,b)=>b.annValue-a.annValue);
+  const total = sorted.reduce((s,i)=>s+i.annValue,0);
+  let cum=0;
+  sorted.forEach(it=>{
+    cum += it.annValue;
+    it.pctOfTotal = (it.annValue/total)*100;
+    it.cumPct = (cum/total)*100;
+    it.abc = it.cumPct<=80 ? "A" : (it.cumPct<=95 ? "B" : "C");
+  });
+}
+
+function fmt(n, dec=0){
+  if(!isFinite(n)) return "—";
+  return n.toLocaleString(undefined,{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function money(n){return "$"+fmt(n,2);}
+
+// ---------- RENDER ----------
+function renderKPIs(){
+  const totalItems = items.length;
+  const toReorder = items.filter(i=>i.status!=="green").length;
+  const totalValue = items.reduce((s,i)=>s+i.stock*i.C,0);
+  const totalSavings = items.reduce((s,i)=>s+Math.max(i.savings,0),0);
+  const svc = document.getElementById("serviceLevel");
+  const svcLabel = svc.options[svc.selectedIndex].text;
+
+  const cards = [
+    {val: totalItems, lbl:"SKUs Tracked", warn:false},
+    {val: toReorder, lbl:"Items Needing Reorder", warn: toReorder>0},
+    {val: "$"+fmt(totalValue), lbl:"On-Hand Inventory Value", warn:false},
+    {val: "$"+fmt(totalSavings), lbl:"Potential Annual Savings vs EOQ", warn:false},
+    {val: svcLabel, lbl:"Target Service Level", warn:false},
+  ];
+  document.getElementById("kpiRow").innerHTML = cards.map(c=>`
+    <div class="kpi ${c.warn?'warn':''}">
+      <div class="val">${c.val}</div>
+      <div class="lbl">${c.lbl}</div>
+    </div>`).join("");
+}
+
+function renderAlerts(){
+  const alerts = items.map((it,idx)=>({...it,idx})).filter(i=>i.status!=="green")
+    .sort((a,b)=> (a.status==="red"?0:1) - (b.status==="red"?0:1) || (a.stock/a.ROP)-(b.stock/b.ROP));
+  document.getElementById("alertCount").textContent = alerts.length;
+  if(alerts.length===0){
+    document.getElementById("alertList").innerHTML = `<div class="alert-empty">No items currently below reorder point.</div>`;
+    return;
+  }
+  document.getElementById("alertList").innerHTML = alerts.map(a=>`
+    <div class="alert-item ${a.status==='amber'?'amber':''}">
+      <div class="name">${a.name}</div>
+      <div class="meta">${a.status==='red'?'CRITICAL':'REORDER'} · stock ${fmt(a.stock)} vs ${state.policy==='continuous'?'ROP':'OUL'} ${fmt(a.ROP)}</div>
+    </div>`).join("");
+}
+
+function passesFilter(it){
+  const s = state.search.trim().toLowerCase();
+  if(s && !it.name.toLowerCase().includes(s)) return false;
+  if(state.cat!=="ALL" && it.cat!==state.cat) return false;
+  if(state.abc!=="ALL" && it.abc!==state.abc) return false;
+  return true;
+}
+
+function renderTable(){
+  document.getElementById("ropHeader").textContent = state.policy==="continuous" ? "ROP" : "Order-up-to (S)";
+  const rows = items.map((it,idx)=>{
+    if(!passesFilter(it)) return "";
+    const ssPct = Math.min(95, (it.SS / (it.ROP*1.6)) * 100);
+    const ropPct = Math.min(98, (it.ROP / (it.ROP*1.6)) * 100);
+    const posPct = Math.min(100, (it.stock / (it.ROP*1.6)) * 100);
+    return `
+    <tr data-idx="${idx}">
+      <td><div class="name-cell">${it.name}</div><div class="cat-tag">${it.cat}</div></td>
+      <td><span class="abc abc-${it.abc}">${it.abc}</span></td>
+      <td><input type="number" data-field="D" value="${it.D}"></td>
+      <td><input type="number" data-field="S" value="${it.S}" step="0.01"></td>
+      <td><input type="number" data-field="H" value="${it.H}" step="0.01"></td>
+      <td><input type="number" data-field="C" value="${it.C}" step="0.01"></td>
+      <td><input type="number" data-field="stock" value="${it.stock}"></td>
+      <td><input type="number" data-field="LT" value="${it.LT}"></td>
+      <td><input type="number" data-field="curQ" value="${it.curQ}"></td>
+      <td><input type="number" data-field="cv" value="${it.cv}"></td>
+      <td class="derived-eoq">${fmt(it.EOQ)}</td>
+      <td class="derived-rop">${fmt(it.ROP)}</td>
+      <td class="derived-ss">${fmt(it.SS)}</td>
+      <td class="derived-tceoq">${money(it.TC_EOQ)}</td>
+      <td class="derived-tccur">${money(it.TC_cur)}</td>
+      <td class="derived-savings ${it.savings>=0?'pos':'neg'}">${it.savings>=0?'+':''}${money(it.savings)}</td>
+      <td>
+        <span class="status-pill status-${it.status}">${it.status==='red'?'CRITICAL':it.status==='amber'?'REORDER':'OK'}</span>
+        <div class="gauge">
+          <div class="gauge-track" style="--ss:${ssPct}%; --rop:${ropPct}%;">
+            <div class="gauge-marker" style="--pos:${posPct}%;"></div>
+          </div>
+          <div class="gauge-labels"><span>SS</span><span>${state.policy==='continuous'?'ROP':'OUL'}</span></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+  document.getElementById("tableBody").innerHTML = rows;
+
+  // attach listeners
+  document.querySelectorAll("#tableBody input").forEach(inp=>{
+    inp.addEventListener("input", e=>{
+      const tr = e.target.closest("tr");
+      const idx = parseInt(tr.dataset.idx);
+      const field = e.target.dataset.field;
+      const val = parseFloat(e.target.value);
+      items[idx][field] = isNaN(val) ? 0 : val;
+      recomputeAll();
+      renderAll(true); // preserve as much as possible; simplest full re-render besides focus loss on this row's siblings
+    });
+  });
+}
+
+function populateChartSelect(){
+  const sel = document.getElementById("chartItemSelect");
+  sel.innerHTML = items.map((it,idx)=>`<option value="${idx}">${it.name}</option>`).join("");
+  sel.value = state.chartItemIdx;
+}
+
+function renderEOQChart(){
+  const it = items[state.chartItemIdx];
+  const points = 40;
+  const qMax = it.EOQ*3;
+  const labels=[], ordering=[], carrying=[], total=[];
+  for(let i=1;i<=points;i++){
+    const q = (qMax/points)*i;
+    labels.push(Math.round(q));
+    const oc = (it.D/q)*it.S;
+    const cc = (q/2)*it.H;
+    ordering.push(oc);
+    carrying.push(cc);
+    total.push(oc+cc);
+  }
+  const ctx = document.getElementById("eoqChart").getContext("2d");
+  if(eoqChart) eoqChart.destroy();
+  eoqChart = new Chart(ctx,{
+    type:"line",
+    data:{
+      labels,
+      datasets:[
+        {label:"Ordering Cost", data:ordering, borderColor:"#7FB8D6", borderWidth:2, pointRadius:0, tension:0.15},
+        {label:"Carrying Cost", data:carrying, borderColor:"#F2A93B", borderWidth:2, pointRadius:0, tension:0.15},
+        {label:"Total Cost", data:total, borderColor:"#E7ECEF", borderWidth:3, pointRadius:0, tension:0.15},
+        {label:"EOQ (min cost)", data: labels.map(l=> Math.abs(l-Math.round(it.EOQ))<(qMax/points) ? it.TC_EOQ : null),
+         showLine:false, pointRadius:7, pointBackgroundColor:"#E0524A", pointBorderColor:"#fff", pointBorderWidth:2}
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:"index", intersect:false},
+      plugins:{
+        legend:{labels:{color:"#8CA0AF", font:{family:"JetBrains Mono", size:10}}},
+        tooltip:{callbacks:{label:(c)=> c.dataset.label+": $"+Math.round(c.raw).toLocaleString()}}
+      },
+      scales:{
+        x:{ticks:{color:"#8CA0AF", maxTicksLimit:8, font:{size:9}}, grid:{color:"#2A3B4A"}, title:{display:true, text:"Order Quantity (units)", color:"#8CA0AF", font:{size:10}}},
+        y:{ticks:{color:"#8CA0AF", font:{size:9}}, grid:{color:"#2A3B4A"}, title:{display:true, text:"Annual Cost ($)", color:"#8CA0AF", font:{size:10}}}
+      }
+    }
+  });
+}
+
+function renderABCChart(){
+  const sorted = [...items].sort((a,b)=>b.annValue-a.annValue);
+  const labels = sorted.map(i=>i.name);
+  const values = sorted.map(i=>i.annValue);
+  const cum = sorted.map(i=>i.cumPct);
+  const colors = sorted.map(i=> i.abc==="A"?"#E0524A": i.abc==="B"?"#F2A93B":"#4FA97D");
+  const ctx = document.getElementById("abcChart").getContext("2d");
+  if(abcChart) abcChart.destroy();
+  abcChart = new Chart(ctx,{
+    data:{
+      labels,
+      datasets:[
+        {type:"bar", label:"Annual Value ($)", data:values, backgroundColor:colors, yAxisID:"y"},
+        {type:"line", label:"Cumulative %", data:cum, borderColor:"#7FB8D6", borderWidth:2, pointRadius:2, yAxisID:"y1"}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:"#8CA0AF", font:{family:"JetBrains Mono", size:10}}}},
+      scales:{
+        x:{ticks:{color:"#8CA0AF", font:{size:8}, maxRotation:60, minRotation:45}, grid:{display:false}},
+        y:{position:"left", ticks:{color:"#8CA0AF", font:{size:9}}, grid:{color:"#2A3B4A"}, title:{display:true,text:"$ Value",color:"#8CA0AF",font:{size:10}}},
+        y1:{position:"right", min:0, max:100, ticks:{color:"#8CA0AF", font:{size:9}}, grid:{display:false}, title:{display:true,text:"Cumulative %",color:"#8CA0AF",font:{size:10}}}
+      }
+    }
+  });
+}
+
+function renderAll(){
+  recomputeAll();
+  renderKPIs();
+  renderAlerts();
+  renderTable();
+  populateChartSelect();
+  renderEOQChart();
+  renderABCChart();
+}
+
+// ---------- EVENTS ----------
+document.getElementById("policyToggle").addEventListener("click", e=>{
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  state.policy = btn.dataset.policy;
+  document.querySelectorAll("#policyToggle button").forEach(b=>b.classList.toggle("active", b===btn));
+  document.getElementById("reviewPeriodGroup").style.display = state.policy==="periodic" ? "flex" : "none";
+  renderAll();
+});
+document.getElementById("reviewPeriod").addEventListener("input", e=>{
+  state.reviewPeriod = parseFloat(e.target.value)||30;
+  renderAll();
+});
+document.getElementById("serviceLevel").addEventListener("change", e=>{
+  state.z = parseFloat(e.target.value);
+  renderAll();
+});
+document.getElementById("searchBox").addEventListener("input", e=>{
+  state.search = e.target.value;
+  renderTable();
+});
+document.querySelectorAll(".chip[data-cat]").forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    document.querySelectorAll(".chip[data-cat]").forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active");
+    state.cat = chip.dataset.cat;
+    renderTable();
+  });
+});
+document.querySelectorAll(".chip.abc-filter").forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    document.querySelectorAll(".chip.abc-filter").forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active");
+    state.abc = chip.dataset.abc;
+    renderTable();
+  });
+});
+document.getElementById("chartItemSelect").addEventListener("change", e=>{
+  state.chartItemIdx = parseInt(e.target.value);
+  renderEOQChart();
+});
+
+// initial paint
+renderAll();
+</script>
+</body>
+</html>
